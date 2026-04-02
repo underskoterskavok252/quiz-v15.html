@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Begrepp Vecka 15</title>
+    <style>
+        :root {
+            --primary: #8e44ad;
+            --secondary: #2980b9;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f5f6fa;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; }
+        .quiz-container { max-width: 700px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        nav { margin-bottom: 20px; text-align: center; background: #2c3e50; padding: 10px; border-radius: 8px; }
+        nav a { margin: 0 15px; text-decoration: none; color: white; font-weight: bold; }
+
+        .progress-bar { height: 10px; background: #ddd; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
+        .progress { height: 100%; background: var(--primary); width: 0%; transition: 0.3s; }
+
+        .question { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 20px; min-height: 50px; text-align: left; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        
+        .option {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .option:hover { border-color: var(--secondary); background: #f8f9fa; }
+        .option.correct { background: var(--success) !important; color: white; border-color: #219150; }
+        .option.wrong { background: var(--danger) !important; color: white; border-color: #c0392b; }
+        .option.disabled { pointer-events: none; }
+
+        .footer { margin-top: 25px; display: flex; justify-content: space-between; align-items: center; }
+        
+        button#next-btn {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+
+        #result-screen { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html">Hem</a>
+    <a href="quiz-v15.html">Quiz V.15</a>
+</nav>
+
+<div class="quiz-container">
+    <div id="quiz-content">
+        <div class="progress-bar"><div class="progress" id="progress"></div></div>
+        <div id="question-number" style="color: #7f8c8d; text-align: left; margin-bottom: 5px;">Fråga 1 av 20</div>
+        <div class="question" id="q-text">Laddar fråga...</div>
+        
+        <div class="options-grid" id="options-container"></div>
+
+        <div class="footer">
+            <div style="font-weight:bold;">Poäng: <span id="current-score">0</span></div>
+            <button id="next-btn" onclick="nextQuestion()">Nästa fråga</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>🎉 Klart!</h2>
+        <p id="final-stats"></p>
+        <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer; background:var(--secondary); color:white; border:none; border-radius:5px;">Gör om testet</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        { q: "Vad innebär 'Demokratisk värdegrund'?", a: ["Bara vissa har rätt att bestämma", "Alla har lika värde och rätt att vara delaktiga", "Att lagar inte gäller alla", "Ekonomisk vinst för vården"], c: 1 },
+        { q: "Vad syftar '*Lika värde' på?", a: ["Att alla är lika och har unika förmågor", "Att alla ska ha samma lön", "Att ingen får sticka ut", "Att alla ska tycka likadant"], c: 0 },
+        { q: "Vad betyder '*Likvärdighet' inom vården?", a: ["Att rika får bättre vård", "Något ska vara lika bra för alla", "Att alla får samma medicin", "Att väntetiden är densamma"], c: 1 },
+        { q: "Vad är '*Inkludering'?", a: ["Att hålla vissa grupper utanför", "Att alla får vara med och känna sig delaktiga", "Att bara fokusera på unga", "Att dela upp folk efter diagnos"], c: 1 },
+        { q: "Vad innebär '*Tillgänglighet'?", a: ["Att det finns gratis internet", "Att miljöer är förberedda på att alla är olika", "Att vårdcentralen är öppen dygnet runt", "Att personalen pratar snabbt"], c: 1 },
+        { q: "Vad handlar 'Levnadsvillkor' om?", a: ["Hur mycket pengar man sparar", "Hur en person lever och möjligheter till ett bra liv", "Vädret på bostadsorten", "Antalet timmar man arbetar"], c: 1 },
+        { q: "Vad betyder '*Delaktighet'?", a: ["Att göra som personalen säger", "Att få vara med, påverka och känna sig viktig", "Att skriva under alla papper", "Att delta i alla aktiviteter"], c: 1 },
+        { q: "Vilken är den sista och sjätte delen i 'Delaktighetsmodellen'?", a: ["Tillgänglighet", "Inflytande", "Erkännande", "Begriplighet"], c: 2 },
+        { q: "Vad innebär begreppet '*Egenmakt' (Empowerment)?", a: ["Att personalen har all makt", "Att en person har kontroll över sitt eget liv", "Att tvinga andra att lyda", "Att kräva mer mediciner"], c: 1 },
+        { q: "Vad betyder '*Självbestämmande' (Autonomi)?", a: ["Att en person får vara med och bestämma över sitt eget liv", "Att familjen fattar alla beslut", "Att följa schemat strikt", "Att inte behöva betala skatt"], c: 0 },
+        { q: "Vad är 'Integritet'?", a: ["Att berätta allt för alla", "Rätten till sitt eget privata område (fysiskt och psykiskt)", "Att alltid vara glad", "Att följa alla regler utan att fråga"], c: 1 },
+        { q: "Vad innebär 'Värdighet' (Dignitet)?", a: ["Att ha fina kläder", "Att behandlas med respekt och behålla sin självkänsla", "Att aldrig behöva hjälp", "Att ha ett eget rum"], c: 1 },
+        { q: "Vad syftar 'Livskvalitet' på?", a: ["Hur länge man lever", "Brukarens hälsa, välmående och meningsfull fritid", "Hur mycket prylar man äger", "Antalet sjukhusbesök"], c: 1 },
+        { q: "Vad är 'Normer'?", a: ["Skrivna lagar i Sverige", "Förväntningar och oskrivna regler om hur något ska vara", "Religiösa högtider", "Medicinska riktlinjer"], c: 1 },
+        { q: "Vad beskriver '*Funktionsförmåga'?", a: ["Bara hur stark man är fysiskt", "Hur en person fungerar fysiskt, psykiskt, kognitivt och socialt", "Hur bra man är på sitt jobb", "Hur snabbt man lär sig språk"], c: 1 },
+        { q: "Vad innebär en 'Psykisk funktionsförmåga' enligt listan?", a: ["Nedsatt syn eller hörsel", "Förmåga påverkad av trauma, krig eller livssituation", "Svårigheter med inlärning", "Problem att hålla balansen"], c: 1 },
+        { q: "Vad innebär en 'Kognitiv funktionsförmåga'?", a: ["Nedsatt rörelseförmåga", "Förmåga gällande inlärning, minne och information", "Svårigheter att skapa relationer", "Kroppslig styrka"], c: 1 },
+        { q: "Vad är en 'Social funktionsförmåga'?", a: ["Att kunna springa snabbt", "Förmågan att skapa och bibehålla relationer", "Att minnas gamla händelser", "Att kunna läsa svåra texter"], c: 1 },
+        { q: "Vad är '*Funktionsnedsättning'?", a: ["När miljön hindrar en person", "Att en funktion är nedsatt och fungerar annorlunda", "Att man inte vill arbeta", "En tillfällig sjukdom"], c: 1 },
+        { q: "När uppstår ett '*Funktionshinder'?", a: ["Det föds man alltid med", "När miljön gör det svårt för personen att vara delaktig", "När man blir gammal", "När man bryter ett ben"], c: 1 }
+    ];
+
+    let currentQ = 0;
+    let score = 0;
+
+    function loadQuestion() {
+        const q = quizData[currentQ];
+        document.getElementById("q-text").innerText = q.q;
+        document.getElementById("question-number").innerText = `Fråga ${currentQ + 1} av 20`;
+        
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+        
+        q.a.forEach((option, index) => {
+            const btn = document.createElement("div");
+            btn.className = "option";
+            btn.innerText = option;
+            btn.onclick = () => selectOption(index, btn);
+            container.appendChild(btn);
+        });
+
+        document.getElementById("next-btn").style.display = "none";
+        updateProgress();
+    }
+
+    function selectOption(index, element) {
+        const q = quizData[currentQ];
+        const options = document.querySelectorAll(".option");
+        
+        options.forEach(opt => opt.classList.add("disabled"));
+
+        if (index === q.c) {
+            element.classList.add("correct");
+            score++;
+            tala("Rätt");
+        } else {
+            element.classList.add("wrong");
+            options[q.c].classList.add("correct");
+            tala("Fel");
+        }
+
+        document.getElementById("current-score").innerText = score;
+        document.getElementById("next-btn").style.display = "block";
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if (currentQ < quizData.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function updateProgress() {
+        const percent = ((currentQ) / quizData.length) * 100;
+        document.getElementById("progress").style.width = percent + "%";
+    }
+
+    function showResults() {
+        document.getElementById("quiz-content").style.display = "none";
+        document.getElementById("result-screen").style.display = "block";
+        document.getElementById("progress").style.width = "100%";
+        document.getElementById("final-stats").innerText = `Bra kämpat! Du fick ${score} av 20 rätt.`;
+    }
+
+    function tala(text) {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'sv-SE';
+        window.speechSynthesis.speak(msg);
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
